@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventPricing & Revenue Optimizer (Montevideo Edition)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#2563eb',
+                            600: '#1d4ed8',
+                            700: '#1e40af',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .dark .glass-panel {
+            background: rgba(15, 23, 42, 0.92);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        .slider-thumb::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+        }
+
+        /* Carrusel Infinito */
+        @keyframes logoScroll {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .logo-slider-container {
+            overflow: hidden;
+            white-space: nowrap;
+            position: relative;
+        }
+        .logo-slider-track {
+            display: inline-flex;
+            gap: 1.5rem;
+            animation: logoScroll 25s linear infinite;
+        }
+        .logo-slider-container:hover .logo-slider-track {
+            animation-play-state: paused;
+        }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            header, footer, #gatedOverlay, .no-print, button, input[type=range] { display: none !important; }
+            .glass-panel { border: none !important; shadow: none !important; backdrop-filter: none !important; }
+            #vipContentSection { display: block !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 w-full border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-brand-600 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-calculator text-lg"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-lg tracking-tight bg-gradient-to-r from-brand-600 to-indigo-600 bg-clip-text text-transparent">SIMULADOR EVENTOS UY</span>
+                    <span class="hidden sm:inline-block text-xs px-2 py-0.5 ml-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-full font-medium border border-slate-200 dark:border-slate-700">Edición 2026</span>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button id="tokenBadgeBtn" onclick="openTokenModal()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 transition">
+                    <i class="fa-solid fa-lock text-amber-500" id="tokenBadgeIcon"></i>
+                    <span id="tokenBadgeText">Acceso VIP / Reporte PDF (Bloqueado)</span>
+                </button>
+                <button onclick="toggleDarkMode()" class="p-2 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-moon dark:hidden"></i>
+                    <i class="fa-solid fa-sun hidden dark:block text-amber-400"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Body -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        
+        <!-- Hero Banner -->
+        <div class="glass-panel p-6 sm:p-8 rounded-2xl shadow-sm relative overflow-hidden">
+            <div class="relative z-10 max-w-3xl space-y-3">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-brand-100 dark:bg-brand-900/60 text-brand-700 dark:text-brand-300">
+                    <i class="fa-solid fa-scale-balanced"></i> Normativa - Tributos - Aranceles
+                </span>
+                <h1 class="text-2xl sm:text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+                    Simulador de Condiciones & Pricing de Espectáculos
+                </h1>
+                <p class="text-slate-600 dark:text-slate-300 text-sm sm:text-base leading-relaxed">
+                    Proyecta la rentabilidad real de tu show, calcula tributos locales, parametriza ventas en efectivo vs. tarjeta, proyecta escenarios por tandas y analiza la viabilidad del evento.
+                </p>
+            </div>
+<!-- Píldora de Valor VIP -->
+        <div class="pt-2 flex flex-wrap items-center gap-3 text-xs text-slate-500 dark:text-slate-400">
+            <span class="flex items-center gap-1.5 font-semibold text-amber-600 dark:text-amber-400">
+                <i class="fa-solid fa-file-pdf"></i> Genera carpeta de pre-producción en PDF para Inversores & Salas
+            </span>
+        </div>
+  </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- PANEL IZQUIERDO: INPUTS Y TANDAS (5 COLS) -->
+            <div class="lg:col-span-5 space-y-6">
+                
+                <div class="glass-panel p-6 rounded-2xl shadow-sm space-y-5">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <h2 class="font-bold text-lg flex items-center gap-2 text-slate-900 dark:text-white">
+                            <i class="fa-solid fa-sliders text-brand-500"></i> Parámetros
+                        </h2>
+                        <button onclick="resetInputs()" class="text-xs text-slate-500 hover:text-brand-600 font-medium no-print">
+                            <i class="fa-solid fa-rotate-left"></i> Restablecer
+                        </button>
+                    </div>
+
+                    <!-- Botones de Pestañas -->
+                    <div class="grid grid-cols-3 gap-2 no-print">
+                        <button id="tabBtnMain" onclick="switchInputTab('main')" class="py-2 px-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md shadow-brand-500/20 transition">
+                            <i class="fa-solid fa-ticket mr-1"></i> Aforo
+                        </button>
+                        <button id="tabBtnCosts" onclick="switchInputTab('costs')" class="py-2 px-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 transition">
+                            <i class="fa-solid fa-coins mr-1"></i> Costos
+                        </button>
+                        <button id="tabBtnTaxes" onclick="switchInputTab('taxes')" class="py-2 px-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 transition">
+                            <i class="fa-solid fa-landmark mr-1"></i> Tributación
+                        </button>
+                    </div>
+
+                    <!-- TAB 1: AFORO, PRECIO, SPONSORS Y MIX EFECTIVO/TARJETA -->
+                    <div id="tabContentMain" class="space-y-4">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label for="inputAforo">Aforo / Capacidad de Sala</label>
+                                <span id="valAforo" class="text-brand-600 font-bold">2.000 pers.</span>
+                            </div>
+                            <input type="range" id="inputAforo" min="100" max="15000" step="100" value="2000" oninput="calculateResults()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                        </div>
+
+                        <div id="containerPrecioUnico">
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label for="inputPrecio">Precio Promedio Entrada ($U)</label>
+                                <span id="valPrecio" class="text-brand-600 font-bold">$ 850 UYU</span>
+                            </div>
+                            <input type="range" id="inputPrecio" min="200" max="5000" step="25" value="850" oninput="calculateResults()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                        </div>
+
+                        <div id="containerVentaUnica">
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label for="inputVentaPorcentaje">% Venta Estimada del Aforo</label>
+                                <span id="valVentaPorcentaje" class="text-brand-600 font-bold">75% (1.500 ent.)</span>
+                            </div>
+                            <input type="range" id="inputVentaPorcentaje" min="10" max="100" step="5" value="75" oninput="calculateResults()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                        </div>
+
+                        <!-- Mix de Pago -->
+                        <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
+                            <div class="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                                <span>Mix de Medio de Cobro</span>
+                                <span id="valMixText" class="text-brand-600">30% Efectivo / 70% Tarjeta</span>
+                            </div>
+                            <input type="range" id="inputMixEfectivo" min="0" max="100" step="5" value="30" oninput="calculateResults()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            <p class="text-[10px] text-slate-500">
+                                ℹ Las ventas en <strong>Efectivo</strong> solo pagan SCH de ticketera (0% arancel bancario de tarjeta).
+                            </p>
+                        </div>
+
+                        <!-- Subsidio por Sponsors -->
+                        <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-900/60 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-rectangle-ad text-indigo-600"></i> Sponsors en Ticket (Subsidio SCH)
+                                </label>
+                                <span id="valSponsorSubsidioText" class="text-xs font-extrabold text-emerald-600">-$20 UYU / ent</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">Logos Sponsors (0 a 3)</label>
+                                    <select id="inputSponsorLogos" onchange="calculateResults()" class="w-full p-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 font-bold">
+                                        <option value="0">0 Sponsors (0% Subsidio)</option>
+                                        <option value="1">1 Sponsor (Baja $10/ent)</option>
+                                        <option value="2" selected>2 Sponsors (Baja $20/ent)</option>
+                                        <option value="3">3 Sponsors (Baja $35/ent)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400">SCH Ticketera Base ($U)</label>
+                                    <input type="number" id="inputSCHBase" value="80" onchange="calculateResults()" class="w-full p-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 border border-indigo-200 dark:border-indigo-800 font-bold text-center">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: COSTOS FIJOS DESGLOSADOS -->
+                    <div id="tabContentCosts" class="space-y-3 hidden">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Alquiler de Sala / Venue ($U)</label>
+                            <input type="number" id="costoVenue" value="120000" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Cachet Artista / Elenco ($U)</label>
+                            <input type="number" id="costoArtista" value="200000" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Producción Técnica (Sonido, Luces) ($U)</label>
+                            <input type="number" id="costoTecnica" value="80000" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Publicidad & Marketing ($U)</label>
+                            <input type="number" id="costoMarketing" value="30000" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-600">Logística & Imprevistos ($U)</label>
+                            <input type="number" id="costoLogistica" value="20000" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: TRIBUTACIÓN Y ARANCELES -->
+                    <div id="tabContentTaxes" class="space-y-4 hidden">
+                        <div class="p-3 bg-brand-50/60 dark:bg-brand-950/40 rounded-xl border border-brand-200 dark:border-brand-800 flex items-center justify-between">
+                            <div>
+                                <label for="chkAplicaIMM" class="text-xs font-bold text-slate-900 dark:text-white cursor-pointer block">¿Evento realizado en Montevideo?</label>
+                                <span class="text-[10px] text-slate-500">Si se desmarca, se exonera el tributo municipal IMM.</span>
+                            </div>
+                            <input type="checkbox" id="chkAplicaIMM" checked onchange="calculateResults()" class="w-5 h-5 text-brand-600 rounded cursor-pointer">
+                        </div>
+
+                        <div id="containerIMMDropdown">
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-semibold">Categoría Espectáculo IMM <span class="text-[10px] text-slate-400 font-normal">(Si aplica)</span></label>
+                                <a href="https://tramites.montevideo.gub.uy/sites/tramites.montevideo.gub.uy/files/tramites/documentos/Formulario%20EP%202025.pdf" target="_blank" class="text-[10px] text-brand-600 font-bold hover:underline no-print">
+                                    <i class="fa-solid fa-file-pdf"></i> Form. EP 2025
+                                </a>
+                            </div>
+                            <select id="inputCategoriaIMM" onchange="calculateResults()" class="w-full p-2 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-medium">
+                                <option value="general">General / Varios (10% del valor de la entrada)</option>
+                                <option value="internacional">Artistas Internacionales (8% con Cert. Notarial)</option>
+                                <option value="mercosur">Artistas Residentes Mercosur / Asociados (6%)</option>
+                                <option value="nacional">Artistas Nacionales / Residentes (Escala UI + Exoneración 800 ent.)</option>
+                                <option value="deporte">Deporte No Profesional / Animales (5%)</option>
+                                <option value="mecanicas">Atracciones Mecánicas (3%)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold mb-1">
+                                <label for="inputCortesias">Invitaciones / Cortesías <span class="text-[10px] text-slate-400 font-normal">(Si aplica)</span></label>
+                                <span id="valCortesias" class="text-brand-600 font-bold">150 ent.</span>
+                            </div>
+                            <input type="range" id="inputCortesias" min="0" max="600" step="10" value="150" oninput="calculateResults()" class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer slider-thumb">
+                            
+                            <div class="flex justify-between items-center text-[10px] mt-1">
+                                <span class="text-slate-500">Tope exonerado IMM: 10% aforo (máx. 200).</span>
+                                <span id="lblStatusCortesias" class="font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Exonerado</span>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700">
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-800 dark:text-slate-200">Arancel Directo Tarjetas Visa / Master (%)</label>
+                                <div class="w-20">
+                                    <input type="number" id="inputFeeTarjetaOptimized" value="3.5" step="0.5" onchange="calculateResults()" class="w-full p-1.5 text-xs rounded-lg bg-white dark:bg-slate-900 font-bold text-center border border-emerald-300 text-emerald-600 focus:ring-2 focus:ring-emerald-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-600">AGADU % <span class="text-[9px] text-slate-400">(Si aplica)</span></label>
+                                <input type="number" id="inputFeeAGADU" value="10.0" step="0.5" onchange="calculateResults()" class="w-full p-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-medium text-slate-600">FONAM/COFONTE % <span class="text-[9px] text-slate-400">(Si aplica)</span></label>
+                                <input type="number" id="inputFeeFONAM" value="3.0" step="0.5" onchange="calculateResults()" class="w-full p-1.5 text-xs rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-center font-bold">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- SIMULADOR DE TANDAS -->
+                <div class="glass-panel p-5 rounded-2xl shadow-sm space-y-4 border border-indigo-100 dark:border-indigo-900/50">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="chkActivarTandas" onchange="toggleTandas()" class="w-4 h-4 text-indigo-600 rounded cursor-pointer">
+                            <h3 class="font-bold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                                Simulador por Tandas (Yield)
+                            </h3>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-100 text-indigo-700">HASTA 3 TANDAS</span>
+                    </div>
+
+                    <div id="wrapperTandas" class="space-y-3 text-xs opacity-50 pointer-events-none transition-all duration-200">
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl space-y-2">
+                            <div class="flex justify-between font-bold text-slate-800 dark:text-slate-200 text-[11px]">
+                                <span>Tanda 1: Early Bird</span>
+                                <span class="text-brand-600 font-bold" id="lblT1Resumen">400 ent. (75% venta)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">Precio ($U)</label>
+                                    <input type="number" id="precioTanda1" value="650" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Aforo</label>
+                                    <input type="number" id="aforoPctTanda1" value="20" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Venta Est.</label>
+                                    <input type="number" id="ventaEstTanda1" value="90" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl space-y-2">
+                            <div class="flex justify-between font-bold text-slate-800 dark:text-slate-200 text-[11px]">
+                                <span>Tanda 2: Preventa</span>
+                                <span class="text-brand-600 font-bold" id="lblT2Resumen">600 ent. (80% venta)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">Precio ($U)</label>
+                                    <input type="number" id="precioTanda2" value="850" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Aforo</label>
+                                    <input type="number" id="aforoPctTanda2" value="30" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Venta Est.</label>
+                                    <input type="number" id="ventaEstTanda2" value="75" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-2.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl space-y-2">
+                            <div class="flex justify-between font-bold text-slate-800 dark:text-slate-200 text-[11px]">
+                                <span>Tanda 3: General / Puerta</span>
+                                <span class="text-brand-600 font-bold" id="lblT3Resumen">1.000 ent. (60% venta)</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">Precio ($U)</label>
+                                    <input type="number" id="precioTanda3" value="1050" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Aforo</label>
+                                    <input type="number" id="aforoPctTanda3" value="50" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                                <div>
+                                    <label class="block text-[9px] text-slate-500">% Venta Est.</label>
+                                    <input type="number" id="ventaEstTanda3" value="60" oninput="calculateResults()" class="w-full p-1 text-xs font-bold rounded bg-white dark:bg-slate-900 border border-slate-300">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-2 bg-indigo-50 dark:bg-indigo-950/40 rounded-lg text-[10px] text-indigo-900 dark:text-indigo-200 flex justify-between font-bold">
+                            <span>Precio Promedio Ponderado Efectivo:</span>
+                            <span id="lblTarifaPonderada">$ 872 UYU</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- DASHBOARD Y RESULTADOS (7 COLS) -->
+            <div class="lg:col-span-7 space-y-6">
+                
+                <!-- Semáforo de Estado -->
+                <div id="trafficLightCard" class="p-6 rounded-2xl shadow-sm border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800">
+                    <div class="flex items-center gap-4">
+                        <div id="trafficLightBadge" class="w-12 h-12 rounded-full flex items-center justify-center text-xl text-white font-bold bg-emerald-600 shadow-lg shadow-emerald-500/40">
+                            <i class="fa-solid fa-check"></i>
+                        </div>
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Diagnóstico de Viabilidad</span>
+                            <h3 class="text-xl font-extrabold text-emerald-900 dark:text-emerald-300" id="statusTitle">PROYECTO VIABLE Y SALUDABLE</h3>
+                            <p class="text-xs text-slate-600 dark:text-slate-300 mt-0.5" id="statusDesc">Márgenes sólidos con un punto de equilibrio accesible antes del show.</p>
+                        </div>
+                    </div>
+                    <div class="text-right w-full sm:w-auto">
+                        <span class="text-xs text-slate-500 block">Punto de Equilibrio (Breakeven)</span>
+                        <span class="text-2xl font-black text-brand-600 dark:text-brand-400" id="lblBreakevenTickets">642 ent.</span>
+                        <span class="text-[11px] text-slate-500 block" id="lblBreakevenPercent">(42.8% del aforo)</span>
+                    </div>
+                </div>
+
+                <!-- KPIs Principales -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="glass-panel p-4 rounded-xl shadow-sm space-y-1">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Recaudación Bruta</span>
+                        <span class="text-base sm:text-lg font-bold text-slate-900 dark:text-white" id="kpiBruto">$ 1.275.000</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-xl shadow-sm space-y-1">
+                        <span class="text-[11px] font-semibold text-slate-500 block">Deducciones Totales</span>
+                        <span class="text-base sm:text-lg font-bold text-rose-600 dark:text-rose-400" id="kpiDeducciones">$ 428.100</span>
+                    </div>
+                    
+                    <div id="kpiNetoCard" class="p-4 rounded-xl shadow-sm space-y-1 col-span-2 sm:col-span-1 border transition-all duration-200 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800">
+                        <span class="text-[11px] font-semibold text-slate-600 dark:text-slate-400 block">Resultado Neto Final</span>
+                        <span class="text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-300" id="kpiNeto">$ 434.400</span>
+                    </div>
+                </div>
+
+                <!-- Gráfico de Cascada y Tabla Resumen -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm space-y-6">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
+                            <i class="fa-solid fa-chart-pie text-brand-500"></i> Desglose de la Cascada de Ingresos
+                        </h3>
+                        <span class="text-xs text-slate-500">Moneda: UYU ($)</span>
+                    </div>
+
+                    <div class="h-60 relative no-print">
+                        <canvas id="cascadeChart"></canvas>
+                    </div>
+
+                    <div class="relative pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <h4 class="font-bold text-sm text-slate-900 dark:text-white mb-3">Detalle Técnico de Retenciones Tributarias & Aranceles</h4>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-200 dark:border-slate-700 text-slate-500">
+                                        <th class="py-2 font-semibold">Concepto / Retención</th>
+                                        <th class="py-2 font-semibold">% o Tasa Base</th>
+                                        <th class="py-2 font-semibold text-right">Monto Estimado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100 dark:divide-slate-800" id="summaryTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- CAPA DE BLOQUEO (PAYWALL CON TOKEN) -->
+                        <div id="gatedOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-md rounded-xl flex flex-col items-center justify-center p-6 text-center text-white space-y-3 z-10 no-print">
+                            <div class="w-12 h-12 bg-amber-500/20 text-amber-400 border border-amber-500/40 rounded-full flex items-center justify-center text-xl">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <h4 class="font-extrabold text-lg">Módulo VIP & PDF Presentable Bloqueados</h4>
+                            <p class="text-xs text-slate-300 max-w-md">
+                                Ingrese su Clave VIP de Asesoría para personalizar el Cronograma Gantt de Pre-producción y exportar la carpeta completa del proyecto en PDF.
+                            </p>
+                            <button onclick="openTokenModal()" class="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition">
+                                <i class="fa-solid fa-key mr-1.5"></i> Ingresar / Solicitar Clave VIP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECCIÓN DESBLOQUEADA CON TOKEN VIP -->
+                <div id="vipContentSection" class="hidden space-y-6">
+                    
+                    <!-- Cronograma Operativo Gantt Personalizable -->
+                    <div class="glass-panel p-6 rounded-2xl shadow-sm space-y-4 border-l-4 border-l-amber-500">
+                        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+                            <div>
+                                <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-calendar-check text-amber-500"></i> Cronograma Operativo de Pre-producción (Gantt)
+                                </h3>
+                                <p class="text-[11px] text-slate-500 mt-0.5">Personalice hitos y tiempos previos al show para exportar su hoja de ruta.</p>
+                            </div>
+                            <button onclick="exportToPDF()" class="text-xs px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-xl shadow transition flex items-center gap-1.5 no-print">
+                                <i class="fa-solid fa-file-pdf"></i> Imprimir / Guardar PDF
+                            </button>
+                        </div>
+                        
+                        <div id="ganttListContainer" class="space-y-2 text-xs">
+                        </div>
+
+                        <div class="p-3 bg-slate-100 dark:bg-slate-800/60 rounded-xl space-y-2 border border-slate-200 dark:border-slate-700 no-print">
+                            <span class="text-[11px] font-bold text-slate-700 dark:text-slate-300 block">Agregar Hito Personalizado</span>
+                            <div class="grid grid-cols-12 gap-2">
+                                <input type="text" id="newHitoDesc" placeholder="Ej: Pauta en radios locales / Confirmar Catering" class="col-span-7 p-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+                                <input type="number" id="newHitoDias" placeholder="Días (-X)" value="30" class="col-span-3 p-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-center font-bold">
+                                <button onclick="addNewHito()" class="col-span-2 py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-plus"></i> Añadir
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SECCIÓN DE ECOSISTEMA ESTRATÉGICO (PÍLDORAS SINTÉTICAS) -->
+        <section class="pt-8 border-t border-slate-200 dark:border-slate-800 space-y-6 no-print">
+            <div class="text-center max-w-2xl mx-auto space-y-2">
+                <h2 class="text-2xl font-extrabold text-slate-900 dark:text-white">Ecosistema Estratégico para Espectáculos</h2>
+                <p class="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+                    Soluciones integrales para optimizar el margen financiero, la estrategia de venta presencial y el personal del show.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- CÁPSULA 1 -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border-2 border-brand-500 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-briefcase"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white">Estrategia Comercial & Pricing</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Asesoramiento integral en ticketing, Coordinacion general para la venta, Acompañamiento ejecutivo para potenciar convenios institucionales.
+                        </p>
+                    </div>
+                    <button onclick="openLeadModal('Estrategia Comercial & Pricing')" class="w-full py-2.5 px-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Contactar por Avanzar
+                    </button>
+                </div>
+
+                <!-- CÁPSULA 2 -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border-2 border-amber-500 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-amber-100 text-amber-600 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-store"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white">Canales Físicos para Venta y Difusión</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Integración estratégica con redes de presencia nacional para venta en locales físicos y comunicación en indoor.
+                        </p>
+                    </div>
+                    <button onclick="openLeadModal('Coordinaciòn para venta Presencial y Web')" class="w-full py-2.5 px-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Contactar por Avanzar
+                    </button>
+                </div>
+
+                <!-- CÁPSULA 3 -->
+                <div class="glass-panel p-6 rounded-2xl shadow-sm border-2 border-emerald-500 hover:shadow-md transition flex flex-col justify-between space-y-4">
+                    <div class="space-y-3">
+                        <div class="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-users-gear"></i>
+                        </div>
+                        <h3 class="font-bold text-base text-slate-900 dark:text-white">Staff Eventual Operativo</h3>
+                        <p class="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                            Provisión y selección de controladores de acceso, acomodadores, coordinadores de sala y contratos a generar con personal eventual del evento.
+                        </p>
+                    </div>
+                    <button onclick="openLeadModal('Staff Eventual Operativo')" class="w-full py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                        <i class="fa-brands fa-whatsapp text-sm"></i> Contactar por Avanzar
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECCIÓN DE MARCAS (RECORRIDO CORPORATIVO & ALIANZAS - CARRUSEL CON CTA) -->
+        <section class="py-6 border-t border-slate-200 dark:border-slate-800 space-y-4 no-print">
+            <div class="text-center">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Recorrido Corporativo & Alianzas</span>
+            </div>
+
+            <div class="logo-slider-container py-2">
+                <div class="logo-slider-track items-center" id="logoTrackContainer">
+                    <!-- Los logos se inyectan dinámicamente -->
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER PARTNER EXCLUSIVO -->
+        <footer class="pt-6 border-t border-slate-200 dark:border-slate-800 text-center space-y-3 no-print">
+            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Partner Estratégico</span>
+            <div class="flex items-center justify-center">
+                <a href="https://avanzargestionhumana.com" target="_blank" class="text-xs font-extrabold text-slate-700 dark:text-slate-300 hover:text-brand-600 transition flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                    <i class="fa-solid fa-user-check text-emerald-500"></i> AVANZAR RH GESTIÓN HUMANA
+                </a>
+            </div>
+            <p class="text-[10px] text-slate-400">© 2026 EventPricing Montevideo. Herramienta de simulaciones financieras para la industria del espectáculo.</p>
+        </footer>
+
+    </main>
+
+    <!-- MODAL POPUP PARA CONSULTAS DE PÍLDORAS -->
+    <div id="leadModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4 no-print">
+        <div class="glass-panel max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-4 relative border border-slate-700">
+            <button onclick="closeLeadModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-1">
+                <div class="w-10 h-10 bg-brand-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-lg">
+                    <i class="fa-brands fa-whatsapp"></i>
+                </div>
+                <h3 class="font-extrabold text-lg text-slate-900 dark:text-white" id="leadModalTitle">Consulta de Servicio</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Complete los datos del evento para redirigirlo al chat directo con Avanzar.
+                </p>
+            </div>
+
+            <div class="space-y-3 text-left">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500">Nombre o Empresa</label>
+                    <input type="text" id="modal_nombre" placeholder="Ej: Pyme / Productora" class="w-full p-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500">Correo Electrónico</label>
+                    <input type="email" id="modal_email" placeholder="contacto@empresa.com" class="w-full p-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500">Nombre & Fecha del Evento</label>
+                    <input type="text" id="modal_evento" placeholder="Ej: Festival 2026 - Noviembre" class="w-full p-2.5 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <button onclick="submitLeadToWhatsApp()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> ENVIAR CONSULTA POR WHATSAPP
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL POPUP PARA CTA DE ALIANZAS EN EL CARRUSEL -->
+    <div id="allianceModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4 no-print">
+        <div class="glass-panel max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-4 relative border border-slate-700">
+            <button onclick="closeAllianceModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full flex items-center justify-center mx-auto text-xl">
+                    <i class="fa-solid fa-handshake"></i>
+                </div>
+                <h3 class="font-extrabold text-xl text-slate-900 dark:text-white">¿Querés integrar tu marca o empresa al ecosistema?</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-300 leading-relaxed">
+                    Sumate a la red de alianzas estratégicas para conectarte con productoras, organizadores y venues de todo el país.
+                </p>
+            </div>
+
+            <div class="space-y-3 bg-slate-100 dark:bg-slate-800/80 p-4 rounded-xl border border-slate-200 dark:border-slate-700 text-left">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500">Nombre de la Empresa o Marca</label>
+                    <input type="text" id="alliance_nombre" placeholder="Ej: Mi Marca S.A." class="w-full p-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase text-slate-500">Rubro / Servicio</label>
+                    <input type="text" id="alliance_rubro" placeholder="Ej: Audio & Iluminación / Sponsors" class="w-full p-2 text-xs rounded-lg bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700">
+                </div>
+            </div>
+
+            <button onclick="submitAllianceToWhatsApp()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                <i class="fa-brands fa-whatsapp text-sm"></i> CONSULTAR PROPUESTA CON AVANZAR
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal Token VIP -->
+    <div id="tokenModal" class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm hidden flex items-center justify-center p-4 no-print">
+        <div class="glass-panel max-w-md w-full p-6 rounded-2xl shadow-2xl space-y-5 relative border border-slate-700">
+            <button onclick="closeTokenModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-amber-500/20 text-amber-400 rounded-full flex items-center justify-center mx-auto text-xl border border-amber-500/30">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="font-extrabold text-xl text-slate-900 dark:text-white">Desbloquear Reporte VIP & PDF</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Ingrese su Clave VIP o solicite la activación mediante un mensaje al equipo de Avanzar.
+                </p>
+            </div>
+
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Clave VIP de Acceso</label>
+                    <input type="text" id="inputVIPToken" placeholder="Ingrese su clave" class="w-full p-2.5 text-center text-sm font-mono tracking-widest uppercase rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-amber-500">
+                </div>
+                <button onclick="verifyToken()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition">
+                    Verificar y Desbloquear
+                </button>
+                <div id="tokenErrorMsg" class="text-xs text-rose-500 font-semibold text-center hidden">
+                    Clave no válida. Solicítela a Avanzar.
+                </div>
+            </div>
+
+            <div class="relative flex py-1 items-center">
+                <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+                <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase font-semibold">¿Cómo obtener la clave?</span>
+                <div class="flex-grow border-t border-slate-200 dark:border-slate-800"></div>
+            </div>
+
+            <div class="space-y-3 bg-emerald-50/60 dark:bg-emerald-950/40 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-brands fa-whatsapp text-emerald-600 text-lg"></i>
+                    <h4 class="text-xs font-bold text-slate-900 dark:text-white">Solicitar Clave a Avanzar</h4>
+                </div>
+                <p class="text-[11px] text-slate-600 dark:text-slate-300">
+                    Realice la transferencia previa y envíe el comprobante para recibir la clave de acceso del mes.
+                </p>
+                <a href="https://wa.me/59899343810?text=Hola!%20Quisiera%20solicitar%20la%20clave%20VIP%20del%20Simulador%20de%20Eventos." target="_blank" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg transition flex items-center justify-center gap-2 block text-center">
+                    Contactar por Avanzar
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script de Lógica Financiera -->
+    <script>
+        let isVIPUnlocked = false;
+        let chartInstance = null;
+        let currentSelectedRubro = "";
+        const VALOR_UI = 6.15;
+
+        // ==========================================
+        // CONFIGURACIÓN SIMPLE DEL CARRUSEL DE LOGOS
+        // ==========================================
+        // Solo Avanzar lleva 'esAvanzar: true' (dirige a su web).
+        // El resto lleva 'esAvanzar: false' (abre el modal de CTA para alianzas).
+        const LISTA_SPONSORS = [
+            { nombre: "AVANZAR RH GESTIÓN HUMANA", esAvanzar: true, url: "https://avanzargestionhumana.com" },
+            { nombre: "Montevideo Events", esAvanzar: false },
+            { nombre: "Productora del Sur", esAvanzar: false },
+            { nombre: "Redes de Venta MVD", esAvanzar: false },
+            { nombre: "Stage & Live Tech", esAvanzar: false }
+        ];
+
+        let hitosGantt = [
+            { desc: "Entrega de carpeta borrador IMM y habilitación de Sala", dias: 60, tag: "Crítico", color: "bg-amber-100 text-amber-800" },
+            { desc: "Lanzamiento Tanda 1 (Early Bird) & Activación de Sponsors en Ticket", dias: 45, tag: "Ventas", color: "bg-emerald-100 text-emerald-800" },
+            { desc: "Contratación y nómina de Staff Operativo de Sala (Avanzar GH)", dias: 15, tag: "Personal", color: "bg-indigo-100 text-indigo-800" }
+        ];
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+        }
+
+        function switchInputTab(tab) {
+            document.getElementById('tabContentMain').classList.add('hidden');
+            document.getElementById('tabContentCosts').classList.add('hidden');
+            document.getElementById('tabContentTaxes').classList.add('hidden');
+
+            document.getElementById('tabBtnMain').className = "py-2 px-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
+            document.getElementById('tabBtnCosts').className = "py-2 px-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
+            document.getElementById('tabBtnTaxes').className = "py-2 px-2 text-xs font-semibold rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300";
+
+            if (tab === 'main') {
+                document.getElementById('tabContentMain').classList.remove('hidden');
+                document.getElementById('tabBtnMain').className = "py-2 px-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md shadow-brand-500/20";
+            } else if (tab === 'costs') {
+                document.getElementById('tabContentCosts').classList.remove('hidden');
+                document.getElementById('tabBtnCosts').className = "py-2 px-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md shadow-brand-500/20";
+            } else {
+                document.getElementById('tabContentTaxes').classList.remove('hidden');
+                document.getElementById('tabBtnTaxes').className = "py-2 px-2 text-xs font-bold rounded-xl bg-brand-600 text-white shadow-md shadow-brand-500/20";
+            }
+        }
+
+        function toggleTandas() {
+            const active = document.getElementById('chkActivarTandas').checked;
+            const wrapper = document.getElementById('wrapperTandas');
+            const containerP = document.getElementById('containerPrecioUnico');
+            const containerV = document.getElementById('containerVentaUnica');
+
+            if (active) {
+                wrapper.classList.remove('opacity-50', 'pointer-events-none');
+                containerP.classList.add('opacity-40', 'pointer-events-none');
+                containerV.classList.add('opacity-40', 'pointer-events-none');
+            } else {
+                wrapper.classList.add('opacity-50', 'pointer-events-none');
+                containerP.classList.remove('opacity-40', 'pointer-events-none');
+                containerV.classList.remove('opacity-40', 'pointer-events-none');
+            }
+            calculateResults();
+        }
+
+        function resetInputs() {
+            document.getElementById('inputAforo').value = 2000;
+            document.getElementById('inputVentaPorcentaje').value = 75;
+            document.getElementById('inputPrecio').value = 850;
+            document.getElementById('inputMixEfectivo').value = 30;
+            document.getElementById('chkAplicaIMM').checked = true;
+            document.getElementById('chkActivarTandas').checked = false;
+            document.getElementById('inputSponsorLogos').value = 2;
+            document.getElementById('inputSCHBase').value = 80;
+            document.getElementById('costoVenue').value = 120000;
+            document.getElementById('costoArtista').value = 200000;
+            document.getElementById('costoTecnica').value = 80000;
+            document.getElementById('costoMarketing').value = 30000;
+            document.getElementById('costoLogistica').value = 20000;
+            document.getElementById('inputCategoriaIMM').value = 'general';
+            document.getElementById('inputCortesias').value = 150;
+            document.getElementById('inputFeeTarjetaOptimized').value = 3.5;
+            document.getElementById('inputFeeAGADU').value = 10.0;
+            document.getElementById('inputFeeFONAM').value = 3.0;
+            toggleTandas();
+        }
+
+        function calculateResults() {
+            const aforo = parseInt(document.getElementById('inputAforo').value);
+            const mixEfectivoPct = parseInt(document.getElementById('inputMixEfectivo').value);
+            const mixTarjetaPct = 100 - mixEfectivoPct;
+            document.getElementById('valMixText').textContent = `${mixEfectivoPct}% Efectivo / ${mixTarjetaPct}% Tarjeta`;
+
+            const usaTandas = document.getElementById('chkActivarTandas').checked;
+            let recaudacionBruta = 0;
+            let entradasVendidas = 0;
+            let precioPromedioEfectivo = 0;
+
+            if (usaTandas) {
+                const p1 = parseFloat(document.getElementById('precioTanda1').value) || 0;
+                const a1Pct = parseFloat(document.getElementById('aforoPctTanda1').value) || 0;
+                const v1Pct = parseFloat(document.getElementById('ventaEstTanda1').value) || 0;
+                const entAforo1 = Math.round(aforo * (a1Pct / 100));
+                const entVend1 = Math.round(entAforo1 * (v1Pct / 100));
+                document.getElementById('lblT1Resumen').textContent = `${entVend1.toLocaleString()} ent. de ${entAforo1.toLocaleString()}`;
+
+                const p2 = parseFloat(document.getElementById('precioTanda2').value) || 0;
+                const a2Pct = parseFloat(document.getElementById('aforoPctTanda2').value) || 0;
+                const v2Pct = parseFloat(document.getElementById('ventaEstTanda2').value) || 0;
+                const entAforo2 = Math.round(aforo * (a2Pct / 100));
+                const entVend2 = Math.round(entAforo2 * (v2Pct / 100));
+                document.getElementById('lblT2Resumen').textContent = `${entVend2.toLocaleString()} ent. de ${entAforo2.toLocaleString()}`;
+
+                const p3 = parseFloat(document.getElementById('precioTanda3').value) || 0;
+                const a3Pct = parseFloat(document.getElementById('aforoPctTanda3').value) || 0;
+                const v3Pct = parseFloat(document.getElementById('ventaEstTanda3').value) || 0;
+                const entAforo3 = Math.round(aforo * (a3Pct / 100));
+                const entVend3 = Math.round(entAforo3 * (v3Pct / 100));
+                document.getElementById('lblT3Resumen').textContent = `${entVend3.toLocaleString()} ent. de ${entAforo3.toLocaleString()}`;
+
+                entradasVendidas = entVend1 + entVend2 + entVend3;
+                recaudacionBruta = (entVend1 * p1) + (entVend2 * p2) + (entVend3 * p3);
+                precioPromedioEfectivo = entradasVendidas > 0 ? (recaudacionBruta / entradasVendidas) : 0;
+
+                document.getElementById('lblTarifaPonderada').textContent = `$ ${Math.round(precioPromedioEfectivo).toLocaleString()} UYU`;
+                document.getElementById('valVentaPorcentaje').textContent = `${((entradasVendidas/aforo)*100).toFixed(1)}% (${entradasVendidas.toLocaleString()} ent.)`;
+                document.getElementById('valPrecio').textContent = `$ ${Math.round(precioPromedioEfectivo).toLocaleString()} UYU (Ponderado)`;
+            } else {
+                const ventaPct = parseInt(document.getElementById('inputVentaPorcentaje').value);
+                precioPromedioEfectivo = parseFloat(document.getElementById('inputPrecio').value);
+                entradasVendidas = Math.round(aforo * (ventaPct / 100));
+                recaudacionBruta = entradasVendidas * precioPromedioEfectivo;
+
+                document.getElementById('valVentaPorcentaje').textContent = `${ventaPct}% (${entradasVendidas.toLocaleString()} ent.)`;
+                document.getElementById('valPrecio').textContent = `$ ${Math.round(precioPromedioEfectivo).toLocaleString()} UYU`;
+            }
+
+            document.getElementById('valAforo').textContent = `${aforo.toLocaleString()} pers.`;
+
+            const numLogos = parseInt(document.getElementById('inputSponsorLogos').value);
+            let subsidioUnit = 0;
+            if (numLogos === 1) subsidioUnit = 10;
+            else if (numLogos === 2) subsidioUnit = 20;
+            else if (numLogos === 3) subsidioUnit = 35;
+
+            document.getElementById('valSponsorSubsidioText').textContent = `-$${subsidioUnit} UYU / ent`;
+
+            const venue = parseFloat(document.getElementById('costoVenue').value) || 0;
+            const artista = parseFloat(document.getElementById('costoArtista').value) || 0;
+            const tecnica = parseFloat(document.getElementById('costoTecnica').value) || 0;
+            const mkt = parseFloat(document.getElementById('costoMarketing').value) || 0;
+            const logistica = parseFloat(document.getElementById('costoLogistica').value) || 0;
+            const costosFijosTotales = venue + artista + tecnica + mkt + logistica;
+
+            const feeTarjetaOpt = parseFloat(document.getElementById('inputFeeTarjetaOptimized').value) || 3.5;
+            const recTarjeta = recaudacionBruta * (mixTarjetaPct / 100);
+            const montoTarjetaOpt = recTarjeta * (feeTarjetaOpt / 100);
+
+            const feeAGADUPct = parseFloat(document.getElementById('inputFeeAGADU').value) || 0;
+            const feeFONAMPct = parseFloat(document.getElementById('inputFeeFONAM').value) || 0;
+
+            const montoAGADU = recaudacionBruta * (feeAGADUPct / 100);
+            const montoFONAM = recaudacionBruta * (feeFONAMPct / 100);
+
+            const aplicaIMM = document.getElementById('chkAplicaIMM').checked;
+            const categoriaIMM = document.getElementById('inputCategoriaIMM').value;
+            const cortesias = parseInt(document.getElementById('inputCortesias').value);
+            document.getElementById('valCortesias').textContent = `${cortesias} ent.`;
+
+            const topeExoneradoCortesias = Math.min(Math.round(aforo * 0.10), 200);
+            const lblStatus = document.getElementById('lblStatusCortesias');
+
+            if (cortesias > topeExoneradoCortesias) {
+                lblStatus.textContent = `Excedente (+${cortesias - topeExoneradoCortesias} ent.)`;
+                lblStatus.className = "font-bold text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded";
+            } else {
+                lblStatus.textContent = "Exonerado (Dentro del tope)";
+                lblStatus.className = "font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded";
+            }
+
+            let montoIMMTotal = 0;
+            let tasaIMMEfectivaTexto = "Exonerado / Fuera de MVD";
+
+            if (aplicaIMM) {
+                let montoIMM = 0;
+                if (categoriaIMM === 'general') {
+                    montoIMM = recaudacionBruta * 0.10;
+                    tasaIMMEfectivaTexto = "10.0% (General / Varios)";
+                } else if (categoriaIMM === 'internacional') {
+                    montoIMM = recaudacionBruta * 0.08;
+                    tasaIMMEfectivaTexto = "8.0% (Internacionales)";
+                } else if (categoriaIMM === 'mercosur') {
+                    montoIMM = recaudacionBruta * 0.06;
+                    tasaIMMEfectivaTexto = "6.0% (Mercosur / Residente)";
+                } else if (categoriaIMM === 'nacional') {
+                    const entElegibles = Math.max(0, entradasVendidas - 800);
+                    const recImponible = entElegibles * precioPromedioEfectivo;
+                    const recEnUI = recImponible / VALOR_UI;
+
+                    if (recEnUI <= 89227) {
+                        montoIMM = 0;
+                        tasaIMMEfectivaTexto = "Exonerado (Bajo cota UI)";
+                    } else if (recEnUI <= 446134) {
+                        montoIMM = recImponible * 0.02;
+                        tasaIMMEfectivaTexto = "2.0% (Tramo 1 UI)";
+                    } else if (recEnUI <= 1070721) {
+                        montoIMM = recImponible * 0.04;
+                        tasaIMMEfectivaTexto = "4.0% (Tramo 2 UI)";
+                    } else {
+                        montoIMM = recImponible * 0.06;
+                        tasaIMMEfectivaTexto = "6.0% (Tramo Max UI)";
+                    }
+                } else if (categoriaIMM === 'deporte') {
+                    montoIMM = recaudacionBruta * 0.05;
+                    tasaIMMEfectivaTexto = "5.0% (Deporte No Prof.)";
+                } else if (categoriaIMM === 'mecanicas') {
+                    montoIMM = recaudacionBruta * 0.03;
+                    tasaIMMEfectivaTexto = "3.0% (Atracciones Mec.)";
+                }
+
+                let montoExtraCortesias = 0;
+                if (cortesias > topeExoneradoCortesias) {
+                    const excedente = cortesias - topeExoneradoCortesias;
+                    montoExtraCortesias = excedente * precioPromedioEfectivo * 0.08;
+                }
+                montoIMMTotal = montoIMM + montoExtraCortesias;
+            }
+
+            const deduccionesTotales = montoTarjetaOpt + montoAGADU + montoFONAM + montoIMMTotal;
+            const resultadoNetoFinal = recaudacionBruta - deduccionesTotales - costosFijosTotales;
+
+            const deduccionVarPorEntrada = (precioPromedioEfectivo * ((mixTarjetaPct/100)*feeTarjetaOpt + feeAGADUPct + feeFONAMPct) / 100) + (montoIMMTotal / (entradasVendidas || 1));
+            const contribucionMarginalPorEntrada = precioPromedioEfectivo - deduccionVarPorEntrada;
+            
+            const breakevenEntradas = contribucionMarginalPorEntrada > 0 ? Math.ceil(costosFijosTotales / contribucionMarginalPorEntrada) : aforo;
+            const breakevenPct = ((breakevenEntradas / aforo) * 100).toFixed(1);
+
+            document.getElementById('kpiBruto').textContent = `$ ${Math.round(recaudacionBruta).toLocaleString()}`;
+            document.getElementById('kpiDeducciones').textContent = `$ ${Math.round(deduccionesTotales).toLocaleString()}`;
+            document.getElementById('kpiNeto').textContent = `$ ${Math.round(resultadoNetoFinal).toLocaleString()}`;
+            document.getElementById('lblBreakevenTickets').textContent = `${breakevenEntradas.toLocaleString()} ent.`;
+            document.getElementById('lblBreakevenPercent').textContent = `(${breakevenPct}% del aforo total)`;
+
+            updateTrafficLightAndCards(resultadoNetoFinal, breakevenEntradas, entradasVendidas);
+            renderFreeSummaryTable(montoTarjetaOpt, feeTarjetaOpt, mixTarjetaPct, montoAGADU, montoFONAM, montoIMMTotal, tasaIMMEfectivaTexto, aplicaIMM);
+            renderChart(recaudacionBruta, montoTarjetaOpt, montoAGADU, montoFONAM, montoIMMTotal, costosFijosTotales, resultadoNetoFinal);
+            renderGanttList();
+        }
+
+        function updateTrafficLightAndCards(neto, breakeven, vendidas) {
+            const card = document.getElementById('trafficLightCard');
+            const badge = document.getElementById('trafficLightBadge');
+            const title = document.getElementById('statusTitle');
+            const desc = document.getElementById('statusDesc');
+            const kpiNetoCard = document.getElementById('kpiNetoCard');
+            const kpiNetoTxt = document.getElementById('kpiNeto');
+
+            if (neto < 0) {
+                card.className = "p-6 rounded-2xl shadow-sm border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800";
+                badge.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl text-white font-bold bg-rose-600";
+                badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i>';
+                title.className = "text-xl font-extrabold text-rose-900 dark:text-rose-300";
+                title.textContent = "PROYECTO EN RIESGO DE PÉRDIDA";
+                desc.textContent = "La recaudación no llega a cubrir los costos fijos. Revise la tarifa o la estructura fiscal.";
+
+                kpiNetoCard.className = "p-4 rounded-xl shadow-sm space-y-1 col-span-2 sm:col-span-1 border transition-all duration-200 bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-800";
+                kpiNetoTxt.className = "text-base sm:text-lg font-black text-rose-800 dark:text-rose-300";
+            } else if (breakeven > vendidas) {
+                card.className = "p-6 rounded-2xl shadow-sm border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800";
+                badge.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl text-white font-bold bg-amber-500";
+                badge.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i>';
+                title.className = "text-xl font-extrabold text-amber-900 dark:text-amber-300";
+                title.textContent = "MARGEN AJUSTADO (ZONA NEUTRA)";
+                desc.textContent = "El evento cubre sus costos pero requiere un porcentaje de ocupación elevado.";
+
+                kpiNetoCard.className = "p-4 rounded-xl shadow-sm space-y-1 col-span-2 sm:col-span-1 border transition-all duration-200 bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800";
+                kpiNetoTxt.className = "text-base sm:text-lg font-black text-amber-800 dark:text-amber-300";
+            } else {
+                card.className = "p-6 rounded-2xl shadow-sm border transition-all duration-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800";
+                badge.className = "w-12 h-12 rounded-full flex items-center justify-center text-xl text-white font-bold bg-emerald-600";
+                badge.innerHTML = '<i class="fa-solid fa-check"></i>';
+                title.className = "text-xl font-extrabold text-emerald-900 dark:text-emerald-300";
+                title.textContent = "PROYECTO VIABLE Y SALUDABLE";
+                desc.textContent = "Márgenes sólidos con un punto de equilibrio accesible antes del espectáculo.";
+
+                kpiNetoCard.className = "p-4 rounded-xl shadow-sm space-y-1 col-span-2 sm:col-span-1 border transition-all duration-200 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800";
+                kpiNetoTxt.className = "text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-300";
+            }
+        }
+
+        function renderFreeSummaryTable(tarjetaOpt, feeOpt, mixTarjetaPct, agadu, fonam, imm, immTasaTexto, aplicaIMM) {
+            const tbody = document.getElementById('summaryTableBody');
+            tbody.innerHTML = `
+                <tr>
+                    <td class="py-2 font-medium">Arancel Tarjetas (${mixTarjetaPct}% Venta)</td>
+                    <td class="py-2 text-slate-500">${feeOpt}%</td>
+                    <td class="py-2 font-bold text-right text-rose-600">$ ${Math.round(tarjetaOpt).toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td class="py-2 font-medium">Derechos AGADU <span class="text-[10px] text-slate-400 font-normal">(Si aplica)</span></td>
+                    <td class="py-2 text-slate-500">10.0%</td>
+                    <td class="py-2 font-bold text-right text-rose-600">$ ${Math.round(agadu).toLocaleString()}</td>
+                </tr>
+                <tr>
+                    <td class="py-2 font-medium">Fondo FONAM / COFONTE <span class="text-[10px] text-slate-400 font-normal">(Si aplica)</span></td>
+                    <td class="py-2 text-slate-500">3.0%</td>
+                    <td class="py-2 font-bold text-right text-rose-600">$ ${Math.round(fonam).toLocaleString()}</td>
+                </tr>
+                <tr class="bg-brand-50/50 dark:bg-brand-950/30 font-semibold">
+                    <td class="py-2 text-brand-900 dark:text-brand-200">Impuesto Espectáculos Públicos IMM</td>
+                    <td class="py-2 text-brand-700 dark:text-brand-300 text-[11px]">${aplicaIMM ? immTasaTexto : 'Exonerado (Evento Fuera de MVD)'}</td>
+                    <td class="py-2 font-bold text-right text-brand-600">$ ${Math.round(imm).toLocaleString()}</td>
+                </tr>
+            `;
+        }
+
+        function renderChart(bruto, tarjeta, agadu, fonam, imm, costos, neto) {
+            const ctx = document.getElementById('cascadeChart').getContext('2d');
+            if (chartInstance) chartInstance.destroy();
+
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Bruto', 'Tarjetas', 'AGADU', 'FONAM', 'IMM', 'Costos Fijos', 'Neto'],
+                    datasets: [{
+                        data: [bruto, -tarjeta, -agadu, -fonam, -imm, -costos, neto],
+                        backgroundColor: ['#2563eb', '#f43f5e', '#f43f5e', '#f43f5e', '#f59e0b', '#64748b', neto >= 0 ? '#10b981' : '#e11d48'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(148, 163, 184, 0.1)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function renderGanttList() {
+            const container = document.getElementById('ganttListContainer');
+            hitosGantt.sort((a, b) => b.dias - a.dias);
+
+            let html = "";
+            hitosGantt.forEach((item, index) => {
+                html += `
+                    <div class="p-2.5 bg-slate-100 dark:bg-slate-800/80 rounded-xl flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="font-bold text-brand-600 min-w-[60px]">Día -${item.dias}:</span>
+                            <span class="text-slate-700 dark:text-slate-300">${item.desc}</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2 py-0.5 ${item.color || 'bg-slate-200 text-slate-800'} text-[10px] font-bold rounded">${item.tag || 'Personalizado'}</span>
+                            <button onclick="removeHito(${index})" class="text-slate-400 hover:text-rose-500 text-xs no-print ml-1"><i class="fa-solid fa-trash"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function addNewHito() {
+            const desc = document.getElementById('newHitoDesc').value.trim();
+            const dias = parseInt(document.getElementById('newHitoDias').value);
+
+            if (!desc || isNaN(dias)) {
+                alert('Ingrese una descripción y un número válido de días.');
+                return;
+            }
+
+            hitosGantt.push({
+                desc: desc,
+                dias: dias,
+                tag: "Personalizado",
+                color: "bg-brand-100 text-brand-800"
+            });
+
+            document.getElementById('newHitoDesc').value = "";
+            renderGanttList();
+        }
+
+        function removeHito(index) {
+            hitosGantt.splice(index, 1);
+            renderGanttList();
+        }
+
+        function openTokenModal() { document.getElementById('tokenModal').classList.remove('hidden'); }
+        function closeTokenModal() { document.getElementById('tokenModal').classList.add('hidden'); }
+
+        function verifyToken() {
+            const tokenInput = document.getElementById('inputVIPToken').value.trim().toUpperCase();
+            
+            const now = new Date();
+            const mm = String(now.getMonth() + 1).padStart(2, '0');
+            const aa = String(now.getFullYear()).slice(-2);
+            
+            const validDynamicAVZ = `AVZ-${mm}${aa}`;
+            
+            if (tokenInput === validDynamicAVZ || tokenInput === 'VIP-2026') {
+                unlockVIPAccess(tokenInput);
+                closeTokenModal();
+            } else {
+                document.getElementById('tokenErrorMsg').classList.remove('hidden');
+            }
+        }
+
+        function unlockVIPAccess(token) {
+            isVIPUnlocked = true;
+            document.getElementById('tokenBadgeText').textContent = `VIP Desbloqueado`;
+            document.getElementById('tokenBadgeBtn').className = "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200";
+            document.getElementById('tokenBadgeIcon').className = "fa-solid fa-unlock text-emerald-500";
+            document.getElementById('gatedOverlay').classList.add('hidden');
+            document.getElementById('vipContentSection').classList.remove('hidden');
+        }
+
+        // LÓGICA DE MODAL POPUP PARA CONSULTAS DE PÍLDORAS
+        function openLeadModal(rubro) {
+            currentSelectedRubro = rubro;
+            document.getElementById('leadModalTitle').textContent = `Consulta: ${rubro}`;
+            document.getElementById('leadModal').classList.remove('hidden');
+        }
+
+        function closeLeadModal() {
+            document.getElementById('leadModal').classList.add('hidden');
+        }
+
+        function submitLeadToWhatsApp() {
+            const nombre = document.getElementById('modal_nombre').value.trim();
+            const email = document.getElementById('modal_email').value.trim();
+            const evento = document.getElementById('modal_evento').value.trim();
+
+            if (!nombre) {
+                alert('Por favor ingrese su Nombre o Empresa para continuar.');
+                return;
+            }
+
+            const text = `Hola equipo de Avanzar! Quisiera realizar una consulta sobre: *${currentSelectedRubro}*\n\n` +
+                         `📌 *Nombre / Empresa:* ${nombre}\n` +
+                         `✉ *Email:* ${email || 'No especificado'}\n` +
+                         `🎟 *Evento & Fecha:* ${evento || 'No especificado'}`;
+
+            window.open(`https://wa.me/59899343810?text=${encodeURIComponent(text)}`, '_blank');
+            closeLeadModal();
+        }
+
+        // LÓGICA DE MODAL POPUP PARA ALIANZAS DEL CARRUSEL
+        function openAllianceModal() {
+            document.getElementById('allianceModal').classList.remove('hidden');
+        }
+
+        function closeAllianceModal() {
+            document.getElementById('allianceModal').classList.add('hidden');
+        }
+
+        function submitAllianceToWhatsApp() {
+            const nombre = document.getElementById('alliance_nombre').value.trim();
+            const rubro = document.getElementById('alliance_rubro').value.trim();
+
+            if (!nombre) {
+                alert('Por favor ingrese el Nombre de su Empresa o Marca.');
+                return;
+            }
+
+            const text = `Hola equipo de Avanzar! Nos gustaría consultar sobre oportunidades de alianza e integración al ecosistema de eventos.\n\n` +
+                         `🏢 *Marca / Empresa:* ${nombre}\n` +
+                         `💼 *Rubro / Servicio:* ${rubro || 'No especificado'}`;
+
+            window.open(`https://wa.me/59899343810?text=${encodeURIComponent(text)}`, '_blank');
+            closeAllianceModal();
+        }
+
+        function exportToPDF() {
+            window.print();
+        }
+
+        // RENDERIZAR RECORRIDO CORPORATIVO (SOLO AVANZAR DIRECTO Y RESTO CON MODAL ALIANZA)
+        function renderSponsorsTrack() {
+            const container = document.getElementById('logoTrackContainer');
+            let html = "";
+
+            for (let i = 0; i < 2; i++) {
+                LISTA_SPONSORS.forEach(sp => {
+                    if (sp.esAvanzar) {
+                        html += `
+                            <a href="${sp.url}" target="_blank" class="px-4 py-2 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-xs font-extrabold rounded-xl text-emerald-800 dark:text-emerald-300 hover:bg-emerald-600 hover:text-white transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-star text-[10px] text-amber-500"></i> ${sp.nombre}
+                            </a>
+                        `;
+                    } else {
+                        html += `
+                            <button onclick="openAllianceModal()" class="px-4 py-2 bg-slate-200/70 dark:bg-slate-800 text-xs font-bold rounded-xl text-slate-700 dark:text-slate-300 hover:bg-amber-500 hover:text-slate-950 transition flex items-center gap-1.5 shadow-sm">
+                                <i class="fa-solid fa-handshake text-[10px] opacity-60"></i> ${sp.nombre}
+                            </button>
+                        `;
+                    }
+                });
+            }
+            container.innerHTML = html;
+        }
+
+        window.onload = function() { 
+            calculateResults(); 
+            renderSponsorsTrack();
+        };
+    </script>
+</body>
+</html>
